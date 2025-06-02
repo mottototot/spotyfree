@@ -1,53 +1,47 @@
-const musicData = [
-    {
-        "title": "Song One",
-        "artist": "Artist One",
-        "file": "https://raw.githubusercontent.com/your-username/your-repo/main/song1.mp3"
-    },
-    {
-        "title": "Song Two",
-        "artist": "Artist Two",
-        "file": "https://raw.githubusercontent.com/your-username/your-repo/main/song2.mp3"
-    }
-];
+async function loadMusic() {
+    const repoUrl = "https://api.github.com/repos/your-username/your-repo/contents/";
+    const response = await fetch(repoUrl);
+    const files = await response.json();
 
-function loadMusic() {
     const player = document.getElementById("player");
 
-    musicData.forEach(song => {
-        let songElement = document.createElement("div");
-        songElement.classList.add("song");
+    for (const file of files) {
+        if (file.name.endsWith(".mp3")) {
+            const songUrl = file.download_url;
 
-        // Read embedded album cover from MP3 metadata
-        jsmediatags.read(song.file, {
-            onSuccess: tag => {
-                let imageData = tag.tags.picture;
-                let base64String = "";
+            jsmediatags.read(songUrl, {
+                onSuccess: tag => {
+                    let imageData = tag.tags.picture;
+                    let base64String = "";
+                    let songTitle = tag.tags.title || file.name.replace(".mp3", "");
+                    let songArtist = tag.tags.artist || "Unknown Artist";
 
-                if (imageData) {
-                    let data = imageData.data;
-                    let format = imageData.format;
-                    base64String = `data:${format};base64,${btoa(String.fromCharCode(...data))}`;
-                } else {
-                    base64String = "default-album.jpg"; // Fallback image
+                    if (imageData) {
+                        let data = imageData.data;
+                        let format = imageData.format;
+                        base64String = `data:${format};base64,${btoa(String.fromCharCode(...data))}`;
+                    } else {
+                        base64String = "default-album.jpg"; // Fallback image
+                    }
+
+                    let songElement = document.createElement("div");
+                    songElement.classList.add("song");
+                    songElement.innerHTML = `
+                        <img src="${base64String}" alt="${songTitle}">
+                        <div>
+                            <h3>${songTitle}</h3>
+                            <p>${songArtist}</p>
+                        </div>
+                        <button onclick="playSong('${songUrl}')">Play</button>
+                    `;
+                    player.appendChild(songElement);
+                },
+                onError: error => {
+                    console.log("Error reading metadata:", error);
                 }
-
-                songElement.innerHTML = `
-                    <img src="${base64String}" alt="${song.title}">
-                    <div>
-                        <h3>${song.title}</h3>
-                        <p>${song.artist}</p>
-                    </div>
-                    <button onclick="playSong('${song.file}')">Play</button>
-                `;
-
-                player.appendChild(songElement);
-            },
-            onError: error => {
-                console.log("Error reading metadata:", error);
-            }
-        });
-    });
+            });
+        }
+    }
 }
 
 function playSong(file) {
