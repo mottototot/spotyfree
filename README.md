@@ -1,2 +1,1 @@
-# spotyfree
-veryfree
+# GO TO https://mottototot.github.io/spotyfree/
